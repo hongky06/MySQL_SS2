@@ -69,13 +69,16 @@ SET budget = budget * 1.2,
     status = 'Active'
 WHERE project_id = 1;
 
+-- Lỗi , em chưa sửa được
 DELETE FROM Assignment
-WHERE bonus_amount < 1200
-AND project_id IN (
+WHERE bonus_amount < 1200 AND project_id IN (
     SELECT project_id
     FROM Project
-    WHERE status = 'Completed'
+   --  WHERE status = 'Completed'
+    WHERE status = 'Pending'
 );
+
+
 
 
 SELECT project_id, project_name
