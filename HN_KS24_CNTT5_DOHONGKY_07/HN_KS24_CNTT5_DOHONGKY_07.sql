@@ -150,7 +150,6 @@ WHERE rating = (SELECT MAX(rating) FROM DOCTORS);
 -- PHẦN 5: INDEX & VIEW (10 ĐIỂM)
 CREATE INDEX idx_status_fee
 ON APPOINTMENTS(status, fee);
-
 CREATE VIEW doctor_summary AS
 SELECT
     d.full_name,
@@ -167,38 +166,40 @@ GROUP BY d.doctor_id;
 -- PHẦN 6: TRIGGER (10 ĐIỂM)
 -- câu 1 
 DELIMITER $$
-CREATE TRIGGER trg_update_completed
+
+CREATE TRIGGER trg_after_update_appointment
 AFTER UPDATE ON APPOINTMENTS
 FOR EACH ROW
 BEGIN
-    IF NEW.status = 'Completed' AND OLD.status <> 'Completed' THEN
-        INSERT INTO VISIT_LOG
-        VALUES (
-            (SELECT IFNULL(MAX(log_id),0)+1 FROM VISIT_LOG),
-            (SELECT record_id FROM MEDICAL_RECORDS WHERE appointment_id = NEW.appointment_id),
+    IF NEW.status = 'Completed' THEN
+        INSERT INTO VISIT_LOG (record_id, doctor_id, note, log_time)
+        SELECT 
+            record_id,
             NEW.doctor_id,
-            NOW(),
-            'Visit completed'
-        );
+            'Visit completed',
+            NOW()
+        FROM MEDICAL_RECORDS
+        WHERE appointment_id = NEW.appointment_id;
     END IF;
-END$$
+END $$
+
+DELIMITER ;
+
 
 -- Câu 2 (5 điểm): Viết một trigger sao cho khi thêm mới một bản ghi vào bảng appointments
--- có trạng thái Completed thì hệ thống tự động tăng điểm đánh giá của bác sĩ tương\
--- ứng trong bảng doctors thêm 0.1, nhưng đảm bảo điểm đánh giá không vượt quá 5.0.
-CREATE TRIGGER trg_insert_completed
+-- có trạng thái Completed thì hệ thống tự động tăng điểm đánh giá của bác sĩ tương
+DELIMITER $$
+CREATE TRIGGER trg_after_insert_appointment
 AFTER INSERT ON APPOINTMENTS
 FOR EACH ROW
 BEGIN
     IF NEW.status = 'Completed' THEN
         UPDATE DOCTORS
-        SET rating = IF(rating + 0.1 > 5, 5, rating + 0.1)
+        SET rating = IF(rating + 0.1 > 5.0, 5.0, rating + 0.1)
         WHERE doctor_id = NEW.doctor_id;
     END IF;
-END$$
-
+END $$
 DELIMITER ;
-
 
 
 
